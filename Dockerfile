@@ -5,13 +5,16 @@ FROM node:16 as build
 WORKDIR /app
 
 # Copy package.json and package-lock.json to the container
-COPY package.json ./
+COPY package*.json ./
 
 # Install project dependencies
 RUN npm install
 
 # Copy the rest of the application code to the container
 COPY . .
+
+# Disable ESLint plugin
+COPY .env ./
 
 # Build the React app
 RUN npm run build
@@ -22,11 +25,11 @@ FROM node:16
 # Set the working directory
 WORKDIR /app
 
-# Copy only the build output from the previous stage
-COPY --from=build /app/build /app/build
-
 # Install a simple HTTP server to serve the build files
 RUN npm install -g serve
+
+# Copy only the build output from the previous stage
+COPY --from=build /app/build /app/build
 
 # Expose port 3000 for the React app
 EXPOSE 3000
