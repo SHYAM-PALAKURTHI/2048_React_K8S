@@ -1,19 +1,24 @@
-FROM node:16
+# Stage 1: Build the React app
+FROM node:16 AS builder
+
 WORKDIR /app
+
 COPY package.json ./
-COPY .babelrc ./
+
 RUN npm install
-COPY ./src ./src
+
+COPY . .
+
 RUN npm run build
 
-# Build Stage 2
-# This build takes the production build from staging build
+# Stage 2: Serve the React app using a lightweight web server
+FROM nginx:alpine
 
-FROM node:10.15.2-alpine
-WORKDIR /app
-COPY package.json ./
-COPY .babelrc ./
-RUN npm install
-COPY --from=0 /usr/src/app/dist ./dist
-EXPOSE 3000
-CMD npm start
+# Copy the build output from the builder stage
+COPY --from=builder /app/build /usr/share/nginx/html
+
+# Expose port 80
+EXPOSE 80
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]
