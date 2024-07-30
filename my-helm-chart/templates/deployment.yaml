@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-2048
+  labels:
+    app: {{ .Release.Name }}-2048
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-2048
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-2048
+    spec:
+      containers:
+      - name: 2048
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        ports:
+        - containerPort: 80
