@@ -15,7 +15,7 @@ pipeline{
         }
         stage('Checkout from Git'){
             steps{
-                git branch: 'master', url: 'https://github.com/shubnimkar/2048_React_K8S.git'
+                git branch: 'master', url: 'https://github.com/SHYAM-PALAKURTHI/2048_React_K8S.git'
             }
         }
         stage("Sonarqube Analysis "){
@@ -54,7 +54,7 @@ pipeline{
         stage("Docker Build & Push"){
             steps{
                 script{
-                   withDockerRegistry(credentialsId: 'docker', toolName: 'docker'){   
+                   withDockerRegistry(credentialsId: 'Dockerhub_id', toolName: 'docker'){   
                        sh "docker build -t 2048 ."
                        sh "docker tag 2048 shubnimkar/2048:latest "
                        sh "docker push shubnimkar/2048:latest "
@@ -73,13 +73,7 @@ pipeline{
             }
         }
         
-        stage('Deploy to kubernets'){
-            steps{
-                script{
-                    withKubeConfig(caCertificate: '', clusterName: '', contextName: '', credentialsId: 'k8s', namespace: '', restrictKubeConfigAccess: false, serverUrl: '') {
-                       sh 'kubectl apply -f deployment.yaml'
-                  }
-                }
+        
             }
         }
     }
