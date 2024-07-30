@@ -1,24 +1,35 @@
 # Stage 1: Build the React app
-FROM node:16 AS builder
+FROM node:16 as build
 
+# Set the working directory
 WORKDIR /app
 
+# Copy package.json and package-lock.json to the container
 COPY package.json ./
 
+# Install project dependencies
 RUN npm install
 
+# Copy the rest of the application code to the container
 COPY . .
 
+# Build the React app
 RUN npm run build
 
-# Stage 2: Serve the React app using a lightweight web server
-FROM nginx:alpine
+# Stage 2: Serve the React app
+FROM node:16
 
-# Copy the build output from the builder stage
-COPY --from=builder /app/build /usr/share/nginx/html
+# Set the working directory
+WORKDIR /app
 
-# Expose port 80
-EXPOSE 80
+# Copy only the build output from the previous stage
+COPY --from=build /app/build /app/build
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Install a simple HTTP server to serve the build files
+RUN npm install -g serve
+
+# Expose port 3000 for the React app
+EXPOSE 3000
+
+# Start the React app
+CMD ["serve", "-s", "build", "-l", "3000"]
