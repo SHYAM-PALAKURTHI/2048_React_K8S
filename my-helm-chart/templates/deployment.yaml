@@ -15,7 +15,7 @@ spec:
         app: {{ .Release.Name }}-2048
     spec:
       containers:
-      - name: 2048
+      - name: "2048"
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         ports:
         - containerPort: 80
