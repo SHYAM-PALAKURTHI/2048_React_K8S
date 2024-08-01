@@ -7,9 +7,6 @@ image:
 
 service:
   type: LoadBalancer
-  annotations:
-    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
-    alb.ingress.kubernetes.io/scheme: internet-facing
   port: 80
 
 resources: {}
