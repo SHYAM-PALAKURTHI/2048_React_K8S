@@ -1,80 +1,79 @@
-pipeline{
+pipeline {
     agent any
-    tools{
-        jdk 'jdk17'
-        nodejs 'node16'
+    tools {
+        jdk 'jdk11' // Ensure this matches your Jenkins JDK installation name
+        nodejs 'nodejs' // Ensure this matches your Jenkins NodeJS installation name
     }
     environment {
-        SCANNER_HOME=tool 'sonar-scanner'
+        SONAR_URL = 'http://15.157.62.185:9000/' // Your SonarQube server URL
+        SONAR_AUTH_TOKEN = credentials('sonarqube-token') // SonarQube authentication token ID in Jenkins credentials
+        SCANNER_HOME = '/opt/sonar-scanner' // Path to your Sonar Scanner installation
     }
     stages {
-        stage('clean workspace'){
-            steps{
+        stage('Clean Workspace') {
+            steps {
                 cleanWs()
             }
         }
-        stage('Checkout from Git'){
-            steps{
+        stage('Checkout from Git') {
+            steps {
                 git branch: 'master', url: 'https://github.com/SHYAM-PALAKURTHI/2048_React_K8S.git'
             }
         }
-        stage("Sonarqube Analysis "){
-            steps{
-                withSonarQubeEnv('sonar-server') {
-                    sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=Game \
-                    -Dsonar.projectKey=Game '''
-                }
-            }
-        }
-        stage("quality gate"){
-           steps {
-                script {
-                    waitForQualityGate abortPipeline: false, credentialsId: 'sonar-creds' 
-                }
-            } 
-        }
-        stage('Install Dependencies') {
+        stage('Print Environment Variables') {
             steps {
-                sh "npm install"
+                sh 'printenv | sort'
             }
         }
-        
-        stage('OWASP FS SCAN') {
+        stage('Sonarqube Analysis') {
             steps {
-                dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', odcInstallation: 'DC'
-                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
-            }
-        }
-        stage('TRIVY FS SCAN') {
-            steps {
-                sh "trivy fs . > trivyfs.txt"
-            }
-        }
-        
-        stage("Docker Build & Push"){
-            steps{
-                script{
-                   withDockerRegistry(credentialsId: 'Dockerhub_id', toolName: 'docker'){   
-                       sh "docker build -t 2048 ."
-                       sh "docker tag 2048 shubnimkar/2048:latest "
-                       sh "docker push shubnimkar/2048:latest "
+                withSonarQubeEnv('sonar-server') { // Ensure 'sonar-server' is the correct SonarQube server name configured in Jenkins
+                    withEnv(["JAVA_HOME=/usr/lib/jvm/java-11-openjdk-11.0.24.8.1", "PATH=${env.JAVA_HOME}/bin:${SCANNER_HOME}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin"]) {
+                        sh '''
+                            echo "JAVA_HOME: $JAVA_HOME"
+                            echo "PATH: $PATH"
+                            if [ -x "$(command -v sonar-scanner)" ]; then
+                                sonar-scanner \
+                                    -Dsonar.projectKey=2048-game \
+                                    -Dsonar.sources=. \
+                                    -Dsonar.host.url=${SONAR_URL} \
+                                    -Dsonar.login=${SONAR_AUTH_TOKEN} \
+                                    -Dsonar.projectName=2048-game
+                            else
+                                echo "Sonar Scanner is not installed or not found in PATH."
+                                exit 1
+                            fi
+                        '''
                     }
                 }
             }
         }
-        stage("TRIVY"){
-            steps{
-                sh "trivy image shubnimkar/2048:latest > trivy.txt" 
+        stage('Install Dependencies') {
+            steps {
+                sh 'ls -lart'
+                sh 'npm install'
             }
         }
-        stage('Deploy to container'){
-            steps{
-                sh 'docker run -d --name 2048 -p 3000:3000 shubnimkar/2048:latest'
+        stage('Build and Push Docker Image') {
+            environment {
+                DOCKER_IMAGE = "palakuws/2048game:${BUILD_NUMBER}"
+                REGISTRY_CREDENTIALS = credentials('dockerhub_id') // Docker Hub credentials ID in Jenkins credentials
+            }
+            steps {
+                script {
+                    sh 'docker build -t ${DOCKER_IMAGE} .'
+                    def dockerImage = docker.image("${DOCKER_IMAGE}")
+                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub_id') {
+                        dockerImage.push()
+                    }
+                }
             }
         }
-        
-        
-            }
+    }
+    post {
+        failure {
+            echo "Pipeline failed, cleaning up workspace."
+            cleanWs()
         }
     }
 }
