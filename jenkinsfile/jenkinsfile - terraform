@@ -1,0 +1,74 @@
+pipeline {
+    agent any
+    tools {
+        jdk 'jdk11'
+        nodejs 'nodejs'
+    }
+    
+    stages {
+        stage('Clean Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
+        stage('Checkout from Git') {
+            steps {
+                git branch: 'master', url: 'https://github.com/SHYAM-PALAKURTHI/2048_React_K8S.git'
+            }
+        }
+		stage('Initializing Terraform'){
+            steps{
+                script{
+					sh 'ls -lart'
+                    dir('terraform-eks')
+					{
+
+                        sh 'terraform init'
+                    }
+                }
+            }
+        }
+        stage('Formatting Terraform Code'){
+            steps{
+                script{
+                    dir('terraform-eks'){
+                        sh 'terraform fmt'
+                    }
+                }
+            }
+        }
+        stage('Validating Terraform'){
+            steps{
+                script{
+                    dir('terraform-eks'){
+                        sh 'terraform validate'
+                    }
+                }
+            }
+        }
+        stage('Previewing the Infra using Terraform'){
+            steps{
+                script{
+                    dir('terraform-eks'){
+                        sh 'terraform plan'
+                    }
+                    input(message: "Are you sure to proceed?", ok: "Proceed")
+                }
+            }
+        }
+		stage('Creating/Destroying an EKS Cluster')
+		{
+            steps
+			{
+                script
+				{
+                    dir('terraform-eks') 
+					{
+                        sh 'terraform apply --auto-approve'
+                    }
+                }
+            }
+        }
+        
+		}
+    }
