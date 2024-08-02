@@ -2,12 +2,13 @@ replicaCount: 1
 
 image:
   repository: palakuws/2048game
-  tag: 24
+  tag: 12
   pullPolicy: IfNotPresent
 
 service:
   type: LoadBalancer
   port: 80
+  targetPort: 3000
 
 resources: {}
 
