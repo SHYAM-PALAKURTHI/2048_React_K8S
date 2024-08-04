@@ -1,3 +1,4 @@
+![pipeline](https://github.com/user-attachments/assets/a94c0c05-4cf1-44e5-83f0-cf329ce99ab2)
 
 **2048 Game Deployment with Terraform and Kubernetes on AWS**
 
